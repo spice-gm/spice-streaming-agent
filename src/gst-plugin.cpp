@@ -261,7 +261,7 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
     }
 
     gst_element_set_state(pipeline.get(), GST_STATE_PLAYING);
-
+    GST_DEBUG_BIN_TO_DOT_FILE(bin, GST_DEBUG_GRAPH_SHOW_VERBOSE, "gst-plugin-pipeline-debug");
 #if !XLIB_CAPTURE
     int sx, sy, ex, ey;
     g_object_get(capture.get(),
