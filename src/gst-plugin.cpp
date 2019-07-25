@@ -252,7 +252,7 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
     gst_bin_add(bin, encoder);
     gst_bin_add(bin, sink);
 
-    GstCapsUPtr caps(gst_caps_from_string("video/x-raw"));
+    GstCapsUPtr caps(gst_caps_from_string("video/x-raw(ANY)"));
     link = gst_element_link(capture.get(), convert.get()) &&
            gst_element_link_filtered(convert.get(), encoder.get(), caps.get()) &&
            gst_element_link_filtered(encoder.get(), sink.get(), sink_caps.get());
