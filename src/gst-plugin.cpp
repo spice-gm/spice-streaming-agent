@@ -6,9 +6,11 @@
 
 #include <config.h>
 #include <cstring>
+#include <sstream>
 #include <exception>
 #include <stdexcept>
 #include <memory>
+#include <map>
 #include <syslog.h>
 #include <unistd.h>
 #include <gst/gst.h>
@@ -35,7 +37,7 @@ struct GstreamerEncoderSettings
     int fps = 25;
     SpiceVideoCodecType codec = SPICE_VIDEO_CODEC_TYPE_VP8;
     std::string encoder;
-    std::vector<std::pair<std::string, std::string>> prop_pairs;
+    std::map<std::string, std::string> enc_props;
 };
 
 #define DECLARE_UPTR(type, func) \
@@ -86,11 +88,14 @@ class GstreamerPlugin final: public Plugin
 public:
     FrameCapture *CreateCapture() override;
     unsigned Rank() override;
-    void ParseOptions(const ConfigureOption *options);
+    void ParseOptions(const ConfigureOption *options, const std::string &codec_name,
+                      const std::string &encoder_cfg);
     SpiceVideoCodecType VideoCodecType() const override {
         return settings.codec;
     }
 private:
+    void StoreEncodingOptions(const std::string &encoder_options);
+    bool StorePluginOption(const std::string &name, const std::string &value);
     GstreamerEncoderSettings settings;
 };
 
@@ -153,7 +158,8 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
         }
         if (!factory && !settings.encoder.empty()) {
             gst_syslog(LOG_WARNING,
-                       "Specified encoder named '%s' cannot produce '%s' stream, make sure matching gst.codec is specified and plugin's availability",
+                       "Specified encoder named '%s' cannot produce '%s' streams. Make sure that "
+                       "gst.CODEC=ENCODER is correctly specified and that the encoder is available.",
                        settings.encoder.c_str(), caps_str.get());
         }
         factory = factory ? factory : (GstElementFactory*)filtered->data;
@@ -165,7 +171,7 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
 
     encoder = factory ? gst_element_factory_create(factory, "encoder") : nullptr;
     if (encoder) { // Set encoder properties
-        for (const auto &prop : settings.prop_pairs) {
+        for (const auto &prop : settings.enc_props) {
             const auto &name = prop.first;
             const auto &value = prop.second;
             if (!g_object_class_find_property(G_OBJECT_GET_CLASS(encoder), name.c_str())) {
@@ -420,43 +426,94 @@ unsigned GstreamerPlugin::Rank()
     return SoftwareMin;
 }
 
-void GstreamerPlugin::ParseOptions(const ConfigureOption *options)
+bool GstreamerPlugin::StorePluginOption(const std::string &name, const std::string &value)
 {
-    for (; options->name; ++options) {
-        const std::string name = options->name;
-        const std::string value = options->value;
 
-        if (name == "framerate") {
-            try {
-                settings.fps = std::stoi(value);
-            } catch (const std::exception &e) {
-                throw std::runtime_error("Invalid value '" + value + "' for option 'framerate'.");
-            }
-        } else if (name == "gst.codec") {
-            if (value == "h264") {
-                settings.codec = SPICE_VIDEO_CODEC_TYPE_H264;
-            } else if (value == "vp9") {
-                settings.codec = SPICE_VIDEO_CODEC_TYPE_VP9;
-            } else if (value == "vp8") {
-                settings.codec = SPICE_VIDEO_CODEC_TYPE_VP8;
-            } else if (value == "mjpeg") {
-                settings.codec = SPICE_VIDEO_CODEC_TYPE_MJPEG;
-            } else if (value == "h265") {
-                settings.codec = SPICE_VIDEO_CODEC_TYPE_H265;
-            } else {
-                throw std::runtime_error("Invalid value '" + value + "' for option 'gst.codec'.");
-            }
-        } else if (name == "gst.encoder") {
-            settings.encoder = value;
-        } else if (name == "gst.prop") {
-            size_t pos = value.find('=');
-            if (pos == 0 || pos >= value.size() - 1) {
-                gst_syslog(LOG_WARNING, "Property input is invalid ('%s' Ignored)", value.c_str());
-                continue;
-            }
-            settings.prop_pairs.push_back(make_pair(value.substr(0, pos), value.substr(pos + 1)));
+    if (name == "framerate") {
+        try {
+            settings.fps = std::stoi(value);
+            return true;
+        } catch (const std::exception &e) {
+            throw std::runtime_error("Invalid value '" + value + "' for option 'framerate'.");
         }
     }
+
+    return false;
+}
+
+void GstreamerPlugin::StoreEncodingOptions(const std::string &encoder_options)
+{
+    std::stringstream encoder_options_ss(encoder_options);
+    std::string option_token;
+
+    while (std::getline(encoder_options_ss, option_token, ',')) {
+        size_t has_sep = option_token.find('=');
+        if (has_sep == std::string::npos) {
+            throw std::runtime_error("Invalid parameter for GStreamer encoder '" + settings.encoder
+                                     + "': " + "separator not found in '" + option_token + "'.");
+
+        }
+        std::string name = option_token.substr(0, has_sep);
+        std::string value = option_token.substr(has_sep + 1);
+
+        if (StorePluginOption(name, value)) {
+            continue;
+        }
+
+        settings.enc_props[name] = value;
+    }
+}
+
+void GstreamerPlugin::ParseOptions(const ConfigureOption *options, const std::string &codec_name,
+                                   const std::string &encoder_cfg)
+{
+    if (codec_name == "h264") {
+        settings.codec = SPICE_VIDEO_CODEC_TYPE_H264;
+    } else if (codec_name == "vp9") {
+        settings.codec = SPICE_VIDEO_CODEC_TYPE_VP9;
+    } else if (codec_name == "vp8") {
+        settings.codec = SPICE_VIDEO_CODEC_TYPE_VP8;
+    } else if (codec_name == "mjpeg") {
+        settings.codec = SPICE_VIDEO_CODEC_TYPE_MJPEG;
+    } else if (codec_name == "h265") {
+        settings.codec = SPICE_VIDEO_CODEC_TYPE_H265;
+    } else {
+        throw std::runtime_error("Invalid value '" + codec_name + "' for GStreamer codec.");
+    }
+
+    size_t config_sep_pos = encoder_cfg.find(':');
+
+    if (config_sep_pos == std::string::npos) {
+        config_sep_pos = encoder_cfg.length();
+    }
+
+    settings.encoder = encoder_cfg.substr(0, config_sep_pos);
+
+    if (settings.encoder.empty()) {
+         throw std::runtime_error("Invalid GStreamer parameter 'gst." + codec_name + "=" +
+                                  encoder_cfg + "': encoder cannot be empty. " +
+                                  "Use 'auto' to pick up GST default encoder.");
+    }
+
+    if (settings.encoder == "auto") {
+        if (config_sep_pos != encoder_cfg.length()) {
+            throw std::runtime_error("Invalid parameter 'gst." + codec_name + "=" + encoder_cfg +
+                                     "': automatically-selected encoder cannot be configured.");
+        }
+        settings.encoder = "";
+    }
+
+    for (; options->name; ++options) {
+        StorePluginOption(options->name, options->value);
+    }
+
+    if (config_sep_pos == encoder_cfg.length()) {
+        return;
+    }
+
+    std::string encoder_options(encoder_cfg.substr(config_sep_pos + 1));
+
+    StoreEncodingOptions(encoder_options);
 }
 
 }}} //namespace spice::streaming_agent::gstreamer_plugin
@@ -465,13 +522,23 @@ using namespace spice::streaming_agent::gstreamer_plugin;
 
 SPICE_STREAMING_AGENT_PLUGIN(agent)
 {
+    const std::string gst_prefix = "gst.";
+    auto options = agent->Options();
+
     gst_init(nullptr, nullptr);
 
-    auto plugin = std::make_shared<GstreamerPlugin>();
+    for (; options->name; ++options) {
+        const std::string name = options->name;
+        const std::string value = options->value;
 
-    plugin->ParseOptions(agent->Options());
+        if (name.rfind(gst_prefix, 0) == 0) {
+            auto plugin = std::make_shared<GstreamerPlugin>();
+            const std::string codec_name = name.substr(gst_prefix.length());
 
-    agent->Register(plugin);
+            plugin->ParseOptions(agent->Options(), codec_name, value);
+            agent->Register(plugin);
+        }
+    }
 
     return true;
 }
