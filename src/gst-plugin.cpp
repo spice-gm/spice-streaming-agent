@@ -67,6 +67,15 @@ struct GstSampleDeleter {
 
 using GstSampleUPtr = std::unique_ptr<GstSample, GstSampleDeleter>;
 
+struct GstBufferDeleter {
+    void operator()(GstBuffer* p)
+    {
+        gst_buffer_unref(p);
+    }
+};
+
+using GstBufferUPtr = std::unique_ptr<GstBuffer, GstBufferDeleter>;
+
 class GstreamerFrameCapture final : public FrameCapture
 {
 public:
@@ -86,7 +95,6 @@ private:
     Display *const dpy;
 #if XLIB_CAPTURE
     void xlib_capture();
-    XImage *image = nullptr;
 #endif
     GstObjectUPtr<GstElement> pipeline, capture, sink;
     GstSampleUPtr sample;
@@ -306,12 +314,6 @@ void GstreamerFrameCapture::free_sample()
         gst_buffer_unmap(gst_sample_get_buffer(sample.get()), &map);
         sample.reset();
     }
-#if XLIB_CAPTURE
-    if(image) {
-        image->f.destroy_image(image);
-        image = nullptr;
-    }
-#endif
 }
 
 GstreamerFrameCapture::~GstreamerFrameCapture()
@@ -327,6 +329,12 @@ void GstreamerFrameCapture::Reset()
 }
 
 #if XLIB_CAPTURE
+void free_ximage(gpointer data)
+{
+    XImage *image = (XImage*)data;
+    image->f.destroy_image(image);
+}
+
 void GstreamerFrameCapture::xlib_capture()
 {
     int screen = XDefaultScreen(dpy);
@@ -349,14 +357,16 @@ void GstreamerFrameCapture::xlib_capture()
         gst_element_set_state(pipeline.get(), GST_STATE_PLAYING);
     }
 
-    image = XGetImage(dpy, win, 0, 0,
-                      cur_width, cur_height, AllPlanes, ZPixmap);
+    XImage *image = XGetImage(dpy, win, 0, 0,
+                              cur_width, cur_height, AllPlanes, ZPixmap);
     if (!image) {
         throw std::runtime_error("Cannot capture from X");
     }
 
-    GstBuffer *buf;
-    buf = gst_buffer_new_wrapped(image->data, image->height * image->bytes_per_line);
+    GstBufferUPtr buf(gst_buffer_new_wrapped_full(GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS, image->data,
+                                                  image->height * image->bytes_per_line, 0,
+                                                  image->height * image->bytes_per_line, image,
+                                                  free_ximage));
     if (!buf) {
         throw std::runtime_error("Failed to wrap image in gstreamer buffer");
     }
@@ -368,8 +378,8 @@ void GstreamerFrameCapture::xlib_capture()
                                          "framerate", GST_TYPE_FRACTION, settings.fps, 1,
                                          nullptr));
 
-    // Push sample
-    GstSampleUPtr appsrc_sample(gst_sample_new(buf, caps.get(), nullptr, nullptr));
+    // Push sample (gst_app_src_push_sample does not take buffer ownership)
+    GstSampleUPtr appsrc_sample(gst_sample_new(buf.get(), caps.get(), nullptr, nullptr));
     if (gst_app_src_push_sample(GST_APP_SRC(capture.get()), appsrc_sample.get()) != GST_FLOW_OK) {
         throw std::runtime_error("gstramer appsrc element cannot push sample");
     }
