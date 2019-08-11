@@ -38,43 +38,19 @@ struct GstreamerEncoderSettings
     std::vector<std::pair<std::string, std::string>> prop_pairs;
 };
 
-template <typename T>
-struct GstObjectDeleter {
-    void operator()(T* p)
-    {
-        gst_object_unref(p);
-    }
-};
+#define DECLARE_UPTR(type, func) \
+    struct type##Deleter {       \
+        void operator()(type* p) \
+        {                        \
+            func(p);             \
+        }                        \
+    };                           \
+    using type##UPtr = std::unique_ptr<type, type##Deleter>;
 
-template <typename T>
-using GstObjectUPtr = std::unique_ptr<T, GstObjectDeleter<T>>;
-
-struct GstCapsDeleter {
-    void operator()(GstCaps* p)
-    {
-        gst_caps_unref(p);
-    }
-};
-
-using GstCapsUPtr = std::unique_ptr<GstCaps, GstCapsDeleter>;
-
-struct GstSampleDeleter {
-    void operator()(GstSample* p)
-    {
-        gst_sample_unref(p);
-    }
-};
-
-using GstSampleUPtr = std::unique_ptr<GstSample, GstSampleDeleter>;
-
-struct GstBufferDeleter {
-    void operator()(GstBuffer* p)
-    {
-        gst_buffer_unref(p);
-    }
-};
-
-using GstBufferUPtr = std::unique_ptr<GstBuffer, GstBufferDeleter>;
+DECLARE_UPTR(GstBuffer, gst_buffer_unref)
+DECLARE_UPTR(GstCaps, gst_caps_unref)
+DECLARE_UPTR(GstSample, gst_sample_unref)
+DECLARE_UPTR(GstElement, gst_object_unref)
 
 class GstreamerFrameCapture final : public FrameCapture
 {
@@ -96,7 +72,7 @@ private:
 #if XLIB_CAPTURE
     void xlib_capture();
 #endif
-    GstObjectUPtr<GstElement> pipeline, capture, sink;
+    GstElementUPtr pipeline, capture, sink;
     GstSampleUPtr sample;
     GstMapInfo map = {};
     uint32_t last_width = ~0u, last_height = ~0u;
@@ -210,7 +186,7 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
 
 // Utility to add an element to a GstBin
 // This checks return value and update reference correctly
-void gst_bin_add(GstBin *bin, const GstObjectUPtr<GstElement> &elem)
+void gst_bin_add(GstBin *bin, const GstElementUPtr &elem)
 {
     if (::gst_bin_add(bin, elem.get())) {
         // ::gst_bin_add take ownership using floating references but
@@ -226,24 +202,24 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
 {
     gboolean link;
 
-    GstObjectUPtr<GstElement> pipeline(gst_pipeline_new("pipeline"));
+    GstElementUPtr pipeline(gst_pipeline_new("pipeline"));
     if (!pipeline) {
         throw std::runtime_error("Gstreamer's pipeline element cannot be created");
     }
-    GstObjectUPtr<GstElement> capture(get_capture_plugin(settings));
+    GstElementUPtr capture(get_capture_plugin(settings));
     if (!capture) {
         throw std::runtime_error("Gstreamer's capture element cannot be created");
     }
-    GstObjectUPtr<GstElement> convert(gst_element_factory_make("autovideoconvert", "convert"));
+    GstElementUPtr convert(gst_element_factory_make("autovideoconvert", "convert"));
     if (!convert) {
         throw std::runtime_error("Gstreamer's 'autovideoconvert' element cannot be created");
     }
     GstCapsUPtr sink_caps;
-    GstObjectUPtr<GstElement> encoder(get_encoder_plugin(settings, sink_caps));
+    GstElementUPtr encoder(get_encoder_plugin(settings, sink_caps));
     if (!encoder) {
         throw std::runtime_error("Gstreamer's encoder element cannot be created");
     }
-    GstObjectUPtr<GstElement> sink(gst_element_factory_make("appsink", "sink"));
+    GstElementUPtr sink(gst_element_factory_make("appsink", "sink"));
     if (!sink) {
         throw std::runtime_error("Gstreamer's appsink element cannot be created");
     }
