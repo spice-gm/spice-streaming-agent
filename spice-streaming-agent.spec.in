@@ -17,6 +17,13 @@ BuildRequires:  gcc-c++
 BuildRequires:  diffutils
 BuildRequires:  gstreamer1-devel
 BuildRequires:  gstreamer1-plugins-base-devel
+BuildRequires:  pixman-devel
+BuildRequires:  glib2-devel
+BuildRequires:  opus-devel
+BuildRequires:  openssl-devel
+BuildRequires:  python3
+BuildRequires:  python3-six
+BuildRequires:  python3-pyparsing
 # we need /usr/sbin/semanage program which is available on different
 # packages depending on distribution
 Requires(post): /usr/sbin/semanage

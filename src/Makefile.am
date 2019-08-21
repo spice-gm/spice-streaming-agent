@@ -16,8 +16,8 @@ AM_CPPFLAGS = \
 	-DSPICE_STREAMING_AGENT_PROGRAM \
 	-I$(top_srcdir)/include \
 	-DPLUGINSDIR=\"$(pkglibdir)/plugins\" \
+	$(SPICE_COMMON_CFLAGS) \
 	$(DRM_CFLAGS) \
-	$(SPICE_PROTOCOL_CFLAGS) \
 	$(X11_CFLAGS) \
 	$(XFIXES_CFLAGS) \
 	$(XRANDR_CFLAGS) \
@@ -52,6 +52,7 @@ spice_streaming_agent_LDADD = \
 	-ldl \
 	-lpthread \
 	libstreaming-utils.a \
+	$(SPICE_COMMON_DIR)/common/libspice-common.la \
 	$(DRM_LIBS) \
 	$(X11_LIBS) \
 	$(XFIXES_LIBS) \
@@ -90,6 +91,7 @@ gst_plugin_la_LDFLAGS = \
 
 gst_plugin_la_LIBADD = \
 	$(GST_LIBS) \
+	$(SPICE_COMMON_DIR)/common/libspice-common.la \
 	$(NULL)
 
 gst_plugin_la_SOURCES = \
@@ -98,7 +100,7 @@ gst_plugin_la_SOURCES = \
 
 gst_plugin_la_CPPFLAGS = \
 	-I$(top_srcdir)/include \
-	$(SPICE_PROTOCOL_CFLAGS) \
+	$(SPICE_COMMON_CFLAGS) \
 	$(GST_CFLAGS) \
 	$(NULL)
 endif

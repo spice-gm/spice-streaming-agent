@@ -2,6 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 NULL =
 SUBDIRS = \
 	include/spice-streaming-agent \
+	subprojects/spice-common \
 	src \
 	$(NULL)
 

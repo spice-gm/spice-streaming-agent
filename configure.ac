@@ -30,9 +30,8 @@ PKG_PROG_PKG_CONFIG
 dnl =========================================================================
 dnl Check deps
 
-SPICE_PROTOCOL_MIN_VER=0.12.16
-PKG_CHECK_MODULES([SPICE_PROTOCOL], [spice-protocol >= $SPICE_PROTOCOL_MIN_VER])
-AC_SUBST([SPICE_PROTOCOL_MIN_VER])
+m4_define([SPICE_PROTOCOL_MIN_VER],[0.12.16])
+m4_include([subprojects/spice-common/m4/common.m4])
 
 PKG_CHECK_MODULES(DRM, libdrm)
 PKG_CHECK_MODULES(X11, x11)

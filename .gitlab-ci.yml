@@ -1,5 +1,8 @@
 image: fedora:latest
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
 before_script:
     - dnf install -y git make automake autoconf autoconf-archive libtool xz
     # get dependencies from spec file
