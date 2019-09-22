@@ -66,6 +66,7 @@ fi
 %{_bindir}/spice-streaming-agent
 %{_sysconfdir}/xdg/autostart/spice-streaming.desktop
 %{_datadir}/gdm/greeter/autostart/spice-streaming.desktop
+%{_mandir}/man1/spice-streaming-agent.1.gz
 
 %files devel
 %defattr(-,root,root,-)

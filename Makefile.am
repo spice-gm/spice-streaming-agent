@@ -25,3 +25,5 @@ EXTRA_DIST = \
 	data/90-spice-guest-streaming.rules \
 	data/spice-streaming.desktop \
 	$(NULL)
+
+dist_man_MANS = spice-streaming-agent.1

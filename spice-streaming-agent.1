@@ -1,0 +1,78 @@
+.TH SPICE-STREAMING-AGENT 1
+.SH NAME
+spice-streaming-agent \- An agent, running on a guest, sending video
+stream of X display to a remote client (over SPICE)
+
+.SH SYNOPSIS
+.B spice-streaming-agent [ <options> ]
+
+.SH DESCRIPTION
+.B spice-streaming-agent
+is an agent, running on a guest, sending video stream of X display to
+a remote client (over SPICE)
+
+The video stream itself depends on plugins/codecs installed on the guest
+(and the client).
+
+Currently only supports X display (Xorg/X11).
+
+Requires a virtio-port device to communicate and a recent enough
+spice-server.
+
+.B spice-streaming-agent
+should start automatically with your X session.
+
+.\" ToDo: add qemu-kvm command line option example
+.\"       or refer to README file
+
+.SH OPTIONS
+.TP
+.BR \-p " " \fIportname\fR
+The virtio-serial port to use
+(default is /dev/virtio-ports/org.spice-space.stream.0)
+.TP
+.BR \-l " " \fIfile\fR
+log frames to file
+
+.TP
+.BR \-\-log-binary
+log binary frames (following -l)
+
+.TP
+.BR \-\-log-categories
+log categories, separated by ':' (currently: frames)
+
+.TP
+.BR \-\-plugins-dir " " path
+change plugins directory
+
+.TP
+.BR \-d
+enable debug logs
+
+.TP
+.BR \-c  " " \fIvariable=value\fR
+A generic way to change plugins/codecs settings.
+This only affects plugins that support this variable
+and this value (and ignored otherwise).
+
+.TP
+.BR \-c  " " \fIframerate=1-100\fR
+
+.\" ToDo: more -c options related to plugins
+
+.SH EXAMPLES
+.TP
+run spice-streaming-agent with a framerate of 20 frames per second
+spice-streaming-agent -c framerate=20
+
+.TP
+run and log binary frames to /tmp/ssa.log
+spice-streaming-agent -l /tmp/ssa.log --log-binary
+
+.TP
+run and print a lot of debug information
+spice-streaming-agent -d
+
+.SH SEE ALSO
+qemu-kvm(1)
