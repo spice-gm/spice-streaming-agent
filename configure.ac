@@ -1,6 +1,6 @@
 AC_PREREQ([2.57])
 
-AC_INIT(spice-streaming-agent, 0.2,
+AC_INIT(spice-streaming-agent, 0.3,
         [spice-devel@lists.freedesktop.org])
 
 AM_CONFIG_HEADER([config.h])

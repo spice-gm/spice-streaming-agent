@@ -1,3 +1,20 @@
+Major changes in 0.3:
+=====================
+- Improve the invalid option argument (-c) error message
+- Improve the frame log messages
+- Make the try-catch block in main() a catch-all
+- Set default syslog mask to a lower level
+- Fix some clang build errors
+- Adding gstreamer based plugin
+- Make error.hpp and the Error class a public API
+- Export symbols in the binary to be used by plugins
+- Interface + implementation of getting device display info
+- Send the GraphicsDeviceInfo to the server
+- Add support for logging statistics from plugins
+- Enable building with GCC 9
+- Add a man page
+
+
 Major changes in 0.2:
 =====================
 - First release
