@@ -4,6 +4,7 @@
 *.lo
 *.tar.bz2
 *.tar.gz
+*.tar.xz
 .*.sw?
 .deps
 .dirstamp
