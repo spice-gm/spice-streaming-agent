@@ -16,6 +16,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <vector>
 
 
 namespace spice {
@@ -47,7 +48,12 @@ struct StartStopMessage
     std::set<SpiceVideoCodecType> client_codecs;
 };
 
-struct InCapabilitiesMessage {};
+const size_t AgentCapabilitiesBytes = (STREAM_CAP_END + 7) / 8;
+
+struct InCapabilitiesMessage
+{
+    std::vector<bool> capabilities;
+};
 
 struct NotifyErrorMessage
 {

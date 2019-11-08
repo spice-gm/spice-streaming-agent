@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdexcept>
 
+#include <common/utils.h>
 
 namespace spice {
 namespace streaming_agent {
@@ -52,8 +53,24 @@ StartStopMessage InboundMessage::get_payload<StartStopMessage>()
 template<>
 InCapabilitiesMessage InboundMessage::get_payload<InCapabilitiesMessage>()
 {
-    // no capabilities yet
-    return InCapabilitiesMessage();
+    size_t msg_len = header.size;
+    if (msg_len > STREAM_MSG_CAPABILITIES_MAX_BYTES) {
+        throw std::runtime_error("Received Capabilities message is too long (" +
+                                 std::to_string(header.size) + " > " +
+                                 std::to_string(STREAM_MSG_CAPABILITIES_MAX_BYTES) + ")");
+    }
+
+    StreamMsgCapabilities *server_caps = (StreamMsgCapabilities *) data.get();
+    struct InCapabilitiesMessage msg;
+    size_t caps_len = std::min(msg_len*8, (size_t) STREAM_CAP_END);
+
+    for (size_t cap = 0; cap < caps_len; ++cap) {
+        msg.capabilities.push_back((bool) test_bitmap(cap, server_caps->capabilities));
+    }
+    for (size_t cap = caps_len; cap < (size_t) STREAM_CAP_END; ++cap) {
+        msg.capabilities.push_back(false);
+    }
+    return msg;
 }
 
 template<>

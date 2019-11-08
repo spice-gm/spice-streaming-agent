@@ -39,6 +39,8 @@
 #include <vector>
 #include <string>
 
+#include <common/utils.h>
+
 using namespace spice::streaming_agent;
 
 class FormatMessage : public OutboundMessage<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
@@ -81,14 +83,27 @@ public:
 class CapabilitiesOutMessage : public OutboundMessage<StreamMsgCapabilities, CapabilitiesOutMessage, STREAM_TYPE_CAPABILITIES>
 {
 public:
+    CapabilitiesOutMessage(const std::vector<bool> &capabilities) : OutboundMessage() {}
+
     static size_t size()
     {
-        return sizeof(PayloadType);
+        uint8_t caps[AgentCapabilitiesBytes];
+
+        return sizeof(PayloadType) + sizeof(caps);
     }
 
-    void write_message_body(StreamPort &stream_port)
+    void write_message_body(StreamPort &stream_port, const std::vector<bool> &capabilities)
     {
-        // No body for capabilities message
+        uint8_t caps[AgentCapabilitiesBytes] = {};
+        size_t i = 0;
+
+        for (auto cap: capabilities) {
+            if (cap) {
+                set_bitmap(i, caps);
+            }
+            i++;
+        }
+        stream_port.write(caps, sizeof(caps));
     }
 };
 
@@ -149,13 +164,31 @@ static bool have_something_to_read(StreamPort &stream_port, bool blocking)
     return false;
 }
 
+static void server_capabilities_received(StreamPort &stream_port,
+                                         std::vector<bool> &server_capabilities)
+{
+#if 0 /* No capability defined at the moment */
+    /* Check here if the server supports the capability */
+    if (server_capabilities[STREAM_CAP_...]) {
+        ...
+    }
+#endif
+}
+
 static void read_command_from_device(StreamPort &stream_port)
 {
     InboundMessage in_message = stream_port.receive();
 
     switch (in_message.header.type) {
     case STREAM_TYPE_CAPABILITIES: {
-        stream_port.send<CapabilitiesOutMessage>();
+        InCapabilitiesMessage msg = in_message.get_payload<InCapabilitiesMessage>();
+        std::vector<bool> agent_capabilities(STREAM_CAP_END, false);
+
+        server_capabilities_received(stream_port, msg.capabilities);
+
+        // populate here the `agent_capabilities` vector
+        // agent_capabilities[STREAM_CAP_...] = true;
+        stream_port.send<CapabilitiesOutMessage>(agent_capabilities);
         return;
     }
     case STREAM_TYPE_NOTIFY_ERROR: {
