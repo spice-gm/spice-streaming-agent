@@ -12,5 +12,5 @@ build_and_test:
     - autoreconf -fi
     - ./configure
     - make
-    - make check
+    - make check || (cat src/unittests/test-suite.log && exit 1)
     - make distcheck

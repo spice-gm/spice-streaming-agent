@@ -14,6 +14,7 @@ BuildRequires:  pkgconfig(udev)
 BuildRequires:  libdrm-devel
 BuildRequires:  libXrandr-devel
 BuildRequires:  gcc-c++
+BuildRequires:  diffutils
 # we need /usr/sbin/semanage program which is available on different
 # packages depending on distribution
 Requires(post): /usr/sbin/semanage
