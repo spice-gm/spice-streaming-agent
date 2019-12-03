@@ -33,7 +33,7 @@ namespace gstreamer_plugin {
 struct GstreamerEncoderSettings
 {
     int fps = 25;
-    SpiceVideoCodecType codec = SPICE_VIDEO_CODEC_TYPE_H264;
+    SpiceVideoCodecType codec = SPICE_VIDEO_CODEC_TYPE_VP8;
     std::string encoder;
     std::vector<std::pair<std::string, std::string>> prop_pairs;
 };
