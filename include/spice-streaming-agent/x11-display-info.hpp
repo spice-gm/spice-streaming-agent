@@ -2,8 +2,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_X_DISPLAY_INFO_HPP
-#define SPICE_STREAMING_AGENT_X_DISPLAY_INFO_HPP
+#pragma once
 
 #include <spice-streaming-agent/frame-capture.hpp>
 
@@ -53,5 +52,3 @@ std::vector<DeviceDisplayInfo> get_device_display_info_no_drm(Display *display);
 std::vector<std::string> get_xrandr_outputs(Display *display, Window window);
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_X_DISPLAY_INFO_HPP

@@ -3,8 +3,8 @@
  * \copyright
  * Copyright 2017 Red Hat Inc. All rights reserved.
  */
-#ifndef SPICE_STREAMING_AGENT_CONCRETE_AGENT_HPP
-#define SPICE_STREAMING_AGENT_CONCRETE_AGENT_HPP
+
+#pragma once
 
 #include <vector>
 #include <set>
@@ -45,5 +45,3 @@ private:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_CONCRETE_AGENT_HPP

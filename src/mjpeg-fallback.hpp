@@ -3,8 +3,8 @@
  * \copyright
  * Copyright 2017 Red Hat Inc. All rights reserved.
  */
-#ifndef SPICE_STREAMING_AGENT_MJPEG_FALLBACK_HPP
-#define SPICE_STREAMING_AGENT_MJPEG_FALLBACK_HPP
+
+#pragma once
 
 #include <spice-streaming-agent/plugin.hpp>
 #include <spice-streaming-agent/frame-capture.hpp>
@@ -33,5 +33,3 @@ private:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_MJPEG_FALLBACK_HPP

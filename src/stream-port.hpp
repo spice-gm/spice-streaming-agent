@@ -4,8 +4,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_STREAM_PORT_HPP
-#define SPICE_STREAMING_AGENT_STREAM_PORT_HPP
+#pragma once
 
 #include <spice/stream-device.h>
 #include <spice/enums.h>
@@ -125,5 +124,3 @@ void read_all(int fd, void *buf, size_t len);
 void write_all(int fd, const void *buf, size_t len);
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_STREAM_PORT_HPP

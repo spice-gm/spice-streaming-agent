@@ -4,8 +4,8 @@
  * \copyright
  * Copyright 2017 Red Hat Inc. All rights reserved.
  */
-#ifndef SPICE_STREAMING_AGENT_PLUGIN_HPP
-#define SPICE_STREAMING_AGENT_PLUGIN_HPP
+
+#pragma once
 
 #include <spice/enums.h>
 #include <memory>
@@ -157,5 +157,3 @@ extern "C" spice::streaming_agent::PluginInitFunc spice_streaming_agent_plugin_i
     bool spice_streaming_agent_plugin_init(spice::streaming_agent::Agent* agent)
 
 #endif
-
-#endif // SPICE_STREAMING_AGENT_PLUGIN_HPP

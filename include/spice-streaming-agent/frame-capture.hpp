@@ -4,8 +4,8 @@
  * \copyright
  * Copyright 2016-2017 Red Hat Inc. All rights reserved.
  */
-#ifndef SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP
-#define SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP
+
+#pragma once
 
 #include <cstdint>
 #include <cstdio>
@@ -72,5 +72,3 @@ protected:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP

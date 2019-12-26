@@ -4,8 +4,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_FRAME_LOG_HPP
-#define SPICE_STREAMING_AGENT_FRAME_LOG_HPP
+#pragma once
 
 #include <cinttypes>
 #include <stddef.h>
@@ -37,5 +36,3 @@ private:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_FRAME_LOG_HPP

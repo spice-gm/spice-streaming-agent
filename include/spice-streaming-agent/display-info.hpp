@@ -2,8 +2,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_DISPLAY_INFO_HPP
-#define SPICE_STREAMING_AGENT_DISPLAY_INFO_HPP
+#pragma once
 
 #include <vector>
 #include <string>
@@ -48,5 +47,3 @@ uint32_t read_hex_number_from_file(const std::string &path);
 std::string get_device_address(const std::string &card_path);
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_DISPLAY_INFO_HPP

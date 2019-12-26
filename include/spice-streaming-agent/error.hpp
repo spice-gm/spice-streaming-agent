@@ -4,8 +4,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_ERROR_HPP
-#define SPICE_STREAMING_AGENT_ERROR_HPP
+#pragma once
 
 #include <stdexcept>
 #include <string>
@@ -21,5 +20,3 @@ public:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_ERROR_HPP

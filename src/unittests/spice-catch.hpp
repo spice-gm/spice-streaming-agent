@@ -6,7 +6,7 @@
  * Copyright 2019 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_CATCH_HPP
+#pragma once
 #include <config.h>
 
 #if   defined(HAVE_CATCH2_CATCH_HPP)
@@ -14,5 +14,3 @@
 #elif defined(HAVE_CATCH_CATCH_HPP)
 #include <catch/catch.hpp>
 #endif
-
-#endif // SPICE_CATCH_HPP

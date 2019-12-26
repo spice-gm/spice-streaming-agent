@@ -5,8 +5,7 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 
-#ifndef SPICE_STREAMING_AGENT_CURSOR_UPDATER_HPP
-#define SPICE_STREAMING_AGENT_CURSOR_UPDATER_HPP
+#pragma once
 
 #include "stream-port.hpp"
 
@@ -30,5 +29,3 @@ private:
 };
 
 }} // namespace spice::streaming_agent
-
-#endif // SPICE_STREAMING_AGENT_CURSOR_UPDATER_HPP
