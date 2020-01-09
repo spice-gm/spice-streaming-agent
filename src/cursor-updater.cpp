@@ -103,6 +103,13 @@ void CursorUpdater::operator()()
                 continue;
             }
 
+            if (cursor->width  > STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
+                cursor->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
+                ::syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
+                         cursor->width, cursor->height);
+                continue;
+            }
+
             last_serial = cursor->cursor_serial;
 
             // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
