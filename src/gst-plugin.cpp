@@ -226,7 +226,7 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
 
     g_object_set(sink.get(),
                  "sync", FALSE,
-                 "drop", TRUE,
+                 "drop", FALSE,
                  "max-buffers", 1,
                  nullptr);
 
