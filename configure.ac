@@ -65,7 +65,7 @@ AC_SUBST(UDEVRULESDIR)
 AC_ARG_ENABLE([gst-plugin],
               AS_HELP_STRING([--enable-gst-plugin=@<:@auto/yes/no@:>@],
                              [Enable GStreamer based plugin]),,
-              [enable_gst_plugin="no"])
+              [enable_gst_plugin="yes"])
 if test "$enable_gst_plugin" != "no"; then
     PKG_CHECK_MODULES(GST, [gstreamer-1.0 gstreamer-app-1.0], [enable_gst_plugin=yes],
         [if test "$enable_gst_plugin" = "yes"; then
