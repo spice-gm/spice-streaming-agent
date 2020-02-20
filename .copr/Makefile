@@ -16,6 +16,6 @@ srpm:
 
 	# create source rpm
 	./autogen.sh
-	sed -i -E "s/(^Release:[[:space:]]*)([^%]*)/\1`date +'%Y%m%d%H%M.spice.nigthly'`/" *.spec
+	sed -i -E "s/(^Release:[[:space:]]*)([^%]*)/\1`date +'%Y%m%d%H%M.spice.latest'`/" *.spec
 	make dist
 	rpmbuild -bs *.spec --define "_sourcedir $$PWD" --define "_srcrpmdir $(outdir)"
