@@ -9,7 +9,7 @@
 
 #include "stream-port.hpp"
 
-#include <X11/Xlib.h>
+#include <xcb/xfixes.h>
 
 
 namespace spice {
@@ -24,8 +24,8 @@ public:
 
 private:
     StreamPort *stream_port;
-    Display *display;  // the X11 display
-    int xfixes_event_base;  // event number for the XFixes events
+    xcb_connection_t* con; // connection to X11
+    uint32_t xfixes_event_base;  // event number for the XFixes events
 };
 
 }} // namespace spice::streaming_agent

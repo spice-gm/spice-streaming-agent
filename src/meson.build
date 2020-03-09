@@ -40,7 +40,7 @@ agent_cpp_args = [
 ]
 agent_link_args = global_link_args
 agent_deps = spice_common_deps
-foreach dep : ['libjpeg', 'libdrm', 'x11', 'xfixes', 'xrandr']
+foreach dep : ['libjpeg', 'libdrm', 'x11', 'xcb', 'xcb-xfixes', 'xrandr']
   agent_deps += dependency(dep)
 endforeach
 agent_deps += cc.find_library('dl', required : false)

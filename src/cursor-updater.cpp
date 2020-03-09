@@ -16,7 +16,6 @@
 #include <vector>
 #include <syslog.h>
 #include <unistd.h>
-#include <X11/extensions/Xfixes.h>
 
 
 namespace spice {
@@ -69,17 +68,42 @@ public:
 
 CursorUpdater::CursorUpdater(StreamPort *stream_port) : stream_port(stream_port)
 {
-    display = XOpenDisplay(nullptr);
-    if (display == nullptr) {
-        throw Error("Failed to open X display");
+    con = xcb_connect(nullptr, nullptr);
+    if (xcb_connection_has_error(con)) {
+        throw Error("Failed to initiate connection to X");
     }
 
-    int error_base;
-    if (!XFixesQueryExtension(display, &xfixes_event_base, &error_base)) {
-        throw Error("XFixesQueryExtension failed");
+    xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(con)).data;
+    if (!screen) {
+        xcb_disconnect(con);
+        throw Error("Cannot get XCB screen");
     }
 
-    XFixesSelectCursorInput(display, DefaultRootWindow(display), XFixesDisplayCursorNotifyMask);
+    // init xfixes
+    const xcb_query_extension_reply_t *reply = xcb_get_extension_data(con, &xcb_xfixes_id);
+    if (!reply || !reply->present) {
+        xcb_disconnect(con);
+        throw Error("Get xfixes extension failed");
+    }
+    xfixes_event_base = reply->first_event;
+
+    xcb_xfixes_query_version_cookie_t xfixes_query_cookie;
+    xcb_xfixes_query_version_reply_t *xfixes_query_reply;
+    xcb_generic_error_t *error = 0;
+
+    xfixes_query_cookie = xcb_xfixes_query_version(con, XCB_XFIXES_MAJOR_VERSION, XCB_XFIXES_MINOR_VERSION);
+    xfixes_query_reply = xcb_xfixes_query_version_reply(con, xfixes_query_cookie, &error);
+    if (!xfixes_query_reply || error) {
+        free(error);
+        xcb_disconnect(con);
+        throw Error("Query xfixes extension failed");
+    }
+    free(xfixes_query_reply);
+
+    // register to cursor events
+    xcb_xfixes_select_cursor_input(con ,screen->root , XCB_XFIXES_CURSOR_NOTIFY_MASK_DISPLAY_CURSOR);
+
+    xcb_flush(con);
 }
 
 void CursorUpdater::operator()()
@@ -88,41 +112,46 @@ void CursorUpdater::operator()()
 
     while (1) {
         try {
-            XEvent event;
-            XNextEvent(display, &event);
-            if (event.type != xfixes_event_base + 1) {
-                continue;
+            while (auto event = xcb_wait_for_event(con)) {
+                if (event->response_type != xfixes_event_base + XCB_XFIXES_CURSOR_NOTIFY) {
+                    continue;
+                }
+
+                xcb_xfixes_get_cursor_image_cookie_t cookie;
+                xcb_xfixes_get_cursor_image_reply_t* cursor_reply;
+
+                cookie = xcb_xfixes_get_cursor_image(con);
+                cursor_reply = xcb_xfixes_get_cursor_image_reply(con, cookie, nullptr);
+
+                if (cursor_reply->cursor_serial == last_serial) {
+                    free(cursor_reply);
+                    continue;
+                }
+
+                if (cursor_reply->width  > STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
+                    cursor_reply->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
+                    ::syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
+                             cursor_reply->width, cursor_reply->height);
+                    free(cursor_reply);
+                    continue;
+                }
+
+                last_serial = cursor_reply->cursor_serial;
+
+                // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
+                size_t pixcount = xcb_xfixes_get_cursor_image_cursor_image_length(cursor_reply);
+                std::vector<uint32_t> pixels;
+                pixels.reserve(pixcount);
+                const uint32_t *reply_pixels = xcb_xfixes_get_cursor_image_cursor_image(cursor_reply);
+
+                for (size_t i = 0; i < pixcount; ++i) {
+                    pixels.push_back(reply_pixels[i]);
+                }
+
+                stream_port->send<CursorMessage>(cursor_reply->width, cursor_reply->height,
+                                             cursor_reply->xhot, cursor_reply->yhot, pixels);
+                free(cursor_reply);
             }
-
-            XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-            if (!cursor) {
-                continue;
-            }
-
-            if (cursor->cursor_serial == last_serial) {
-                continue;
-            }
-
-            if (cursor->width  > STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
-                cursor->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
-                ::syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
-                         cursor->width, cursor->height);
-                continue;
-            }
-
-            last_serial = cursor->cursor_serial;
-
-            // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
-            size_t pixcount = cursor->width * cursor->height;
-            std::vector<uint32_t> pixels;
-            pixels.reserve(pixcount);
-
-            for (size_t i = 0; i < pixcount; ++i) {
-                pixels.push_back(cursor->pixels[i]);
-            }
-
-            stream_port->send<CursorMessage>(cursor->width, cursor->height,
-                                             cursor->xhot, cursor->yhot, pixels);
         } catch (const std::exception &e) {
             ::syslog(LOG_ERR, "Error in cursor updater thread: %s", e.what());
             sleep(1); // rate-limit the error
