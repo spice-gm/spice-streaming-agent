@@ -11,6 +11,7 @@
 
 #include <xcb/xfixes.h>
 #include <memory>
+#include <thread>
 
 namespace spice {
 namespace streaming_agent {
@@ -31,13 +32,17 @@ class CursorUpdater
 {
 public:
     CursorUpdater(StreamPort *stream_port);
-
-    [[noreturn]] void operator()();
-
+    ~CursorUpdater();
+    CursorUpdater(const CursorUpdater &) = delete;
+    CursorUpdater &operator=(const CursorUpdater &) = delete;
 private:
     StreamPort *stream_port;
     xcb_connection_uptr con; // connection to X11
     uint32_t xfixes_event_base;  // event number for the XFixes events
+    std::thread running_thread;
+
+    void wait_events(); // run in sperate thread
+    void stop_wait_thread();
 };
 
 }} // namespace spice::streaming_agent

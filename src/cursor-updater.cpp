@@ -16,7 +16,7 @@
 #include <vector>
 #include <syslog.h>
 #include <unistd.h>
-
+#include <sys/socket.h>
 
 namespace spice {
 namespace streaming_agent {
@@ -105,58 +105,72 @@ CursorUpdater::CursorUpdater(StreamPort *stream_port) :
                                    XCB_XFIXES_CURSOR_NOTIFY_MASK_DISPLAY_CURSOR);
 
     xcb_flush(con.get());
+    running_thread = std::thread(&CursorUpdater::wait_events, this);
 }
 
-void CursorUpdater::operator()()
+void CursorUpdater::stop_wait_thread()
+{
+    if (!shutdown(xcb_get_file_descriptor(con.get()), SHUT_RDWR)) {
+        syslog(LOG_DEBUG, "Waiting cursor updater thread to be joined ...");
+    } else {
+        syslog(LOG_WARNING, "Cannot shutdown X connection fd! "
+                            "Try to join cursor updater thread ...");
+    }
+    running_thread.join();
+    syslog(LOG_DEBUG, "Cursor updater thread joined");
+}
+
+CursorUpdater::~CursorUpdater()
+{
+    stop_wait_thread();
+}
+
+void CursorUpdater::wait_events()
 {
     unsigned long last_serial = 0;
 
-    while (1) {
-        try {
-            while (auto event = xcb_wait_for_event(con.get())) {
-                if (event->response_type != xfixes_event_base + XCB_XFIXES_CURSOR_NOTIFY) {
-                    continue;
-                }
-
-                xcb_xfixes_get_cursor_image_cookie_t cookie;
-
-                cookie = xcb_xfixes_get_cursor_image(con.get());
-                xcb_xfixes_get_cursor_image_reply_uptr
-                    cursor_reply(xcb_xfixes_get_cursor_image_reply(con.get(), cookie, nullptr));
-
-                if (cursor_reply->cursor_serial == last_serial) {
-                    continue;
-                }
-
-                if (cursor_reply->width  > STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
-                    cursor_reply->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
-                    ::syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
-                             cursor_reply->width, cursor_reply->height);
-                    continue;
-                }
-
-                last_serial = cursor_reply->cursor_serial;
-
-                // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
-                size_t pixcount =
-                    xcb_xfixes_get_cursor_image_cursor_image_length(cursor_reply.get());
-                std::vector<uint32_t> pixels;
-                pixels.reserve(pixcount);
-                const uint32_t *reply_pixels =
-                    xcb_xfixes_get_cursor_image_cursor_image(cursor_reply.get());
-
-                for (size_t i = 0; i < pixcount; ++i) {
-                    pixels.push_back(reply_pixels[i]);
-                }
-
-                stream_port->send<CursorMessage>(cursor_reply->width, cursor_reply->height,
-                                             cursor_reply->xhot, cursor_reply->yhot, pixels);
-            }
-        } catch (const std::exception &e) {
-            ::syslog(LOG_ERR, "Error in cursor updater thread: %s", e.what());
-            sleep(1); // rate-limit the error
+    xcb_flush(con.get()); // flush pending first
+    while (auto event = xcb_wait_for_event(con.get())) {
+        if (event->response_type != xfixes_event_base + XCB_XFIXES_CURSOR_NOTIFY) {
+            continue;
         }
+
+        xcb_xfixes_get_cursor_image_cookie_t cookie;
+
+        cookie = xcb_xfixes_get_cursor_image(con.get());
+        xcb_xfixes_get_cursor_image_reply_uptr
+            cursor_reply(xcb_xfixes_get_cursor_image_reply(con.get(), cookie, nullptr));
+
+        if (cursor_reply->cursor_serial == last_serial) {
+            continue;
+        }
+
+        if (cursor_reply->width  > STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
+            cursor_reply->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
+            syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
+                     cursor_reply->width, cursor_reply->height);
+            continue;
+        }
+
+        last_serial = cursor_reply->cursor_serial;
+
+        // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
+        size_t pixcount = xcb_xfixes_get_cursor_image_cursor_image_length(cursor_reply.get());
+        std::vector<uint32_t> pixels;
+        pixels.reserve(pixcount);
+        const uint32_t *reply_pixels = xcb_xfixes_get_cursor_image_cursor_image(cursor_reply.get());
+
+        for (size_t i = 0; i < pixcount; ++i) {
+            pixels.push_back(reply_pixels[i]);
+        }
+
+        stream_port->send<CursorMessage>(cursor_reply->width, cursor_reply->height,
+                                         cursor_reply->xhot, cursor_reply->yhot, pixels);
     }
+    if (xcb_connection_has_error(con.get()) != XCB_CONN_ERROR) {
+        syslog(LOG_ERR, "XCB connecnion has error in cursor updater thread (%d)",
+               xcb_connection_has_error(con.get()));
+    } // otherwise it might be a shutdown(con_fd) which initiated intentionally
 }
 
 }} // namespace spice::streaming_agent

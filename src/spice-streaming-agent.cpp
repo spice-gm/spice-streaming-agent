@@ -35,7 +35,6 @@
 #include <exception>
 #include <stdexcept>
 #include <memory>
-#include <thread>
 #include <vector>
 #include <string>
 
@@ -450,8 +449,7 @@ int main(int argc, char* argv[])
 
         StreamPort stream_port(stream_port_name);
 
-        std::thread cursor_updater{CursorUpdater(&stream_port)};
-        cursor_updater.detach();
+        CursorUpdater running_cursor_thread(&stream_port); // can live only while stream_port is alive !
 
         do_capture(stream_port, frame_log, agent);
     }
