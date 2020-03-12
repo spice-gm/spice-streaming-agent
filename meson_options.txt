@@ -1,0 +1,11 @@
+option('gst-plugin',
+       type : 'feature',
+       description : 'Enable GStreamer based plugin')
+
+option('unittests',
+       type : 'feature',
+       description : 'Enable tests (they require \'catch\' to be installed)')
+
+option('udevrulesdir',
+       type : 'string',
+       description : 'udev rules.d directory')
