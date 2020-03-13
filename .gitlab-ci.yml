@@ -4,7 +4,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-    - dnf install -y git make automake autoconf autoconf-archive libtool xz
+    - dnf install -y git make automake autoconf autoconf-archive libtool xz meson
     # get dependencies from spec file
     - dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/\bspice-protocol\b//; s/>.*//' spice-streaming-agent.spec.in`
     - git clone ${CI_REPOSITORY_URL/spice-streaming-agent/spice-protocol}
@@ -18,3 +18,18 @@ build_and_test:
     - make
     - make check || (cat src/unittests/test-suite.log && exit 1)
     - make distcheck
+
+build_meson:
+  script:
+    - meson --buildtype=release build-default
+    # Meson does not update submodules recursively
+    - git submodule update --init --recursive
+    # this fix an issue with Meson dist
+    - if ! test -r ../spice-common.git; then DIR=`basename "$PWD"`; ln -s "$DIR/.git/modules/spice-common" ../spice-common.git; fi
+    - ninja -C build-default dist
+    - ninja -C build-default
+    - ninja -C build-default test
+
+    - meson --buildtype=release build-feat-disabled -Dauto_features=disabled
+    - ninja -C build-feat-disabled
+    - ninja -C build-feat-disabled test
