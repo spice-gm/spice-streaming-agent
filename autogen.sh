@@ -7,6 +7,7 @@ test -z "$srcdir" && srcdir=.
 
 (
     cd "$srcdir"
+    git submodule update --init --recursive
     autoreconf -v --force --install
 )
 
