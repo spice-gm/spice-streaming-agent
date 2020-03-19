@@ -22,8 +22,6 @@ build_and_test:
 build_meson:
   script:
     - meson --buildtype=release build-default
-    # Meson does not update submodules recursively
-    - git submodule update --init --recursive
     # this fix an issue with Meson dist
     - if ! test -r ../spice-common.git; then DIR=`basename "$PWD"`; ln -s "$DIR/.git/modules/spice-common" ../spice-common.git; fi
     - ninja -C build-default dist
