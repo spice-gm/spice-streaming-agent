@@ -117,7 +117,7 @@ public:
     {
         std::vector<std::string> result;
 
-        for (size_t i = 0; i < drm_resources->count_connectors; ++i) {
+        for (int i = 0; i < drm_resources->count_connectors; ++i) {
             drmModeConnectorPtr conn = drmModeGetConnector(drm_fd, drm_resources->connectors[i]);
 
             if (conn == nullptr) {
