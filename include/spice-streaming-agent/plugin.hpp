@@ -121,6 +121,12 @@ public:
      */
     __attribute__ ((format (printf, 2, 3)))
     virtual void LogStat(const char* format, ...) = 0;
+
+protected:
+    /*!
+     * Virtual destructor, declared at the end to avoid ABI changes
+     */
+    virtual ~Agent() = default;
 };
 
 typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);
