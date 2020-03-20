@@ -39,18 +39,20 @@ global_link_args = [
 ]
 global_link_args = cxx.get_supported_link_arguments(global_link_args)
 
+config_data = configuration_data()
+
+
 #
 # set up subprojects
 #
 spice_common = subproject('spice-common', default_options : ['generate-code=all'])
 spice_common_deps = [spice_common.get_variable('spice_common_client_dep')]
+config_data.merge_from(spice_common.get_variable('spice_common_config_data'))
 
 
 #
 # check for options
 #
-config_data = configuration_data()
-
 compile_gst_plugin = false
 gst_deps = []
 if not get_option('gst-plugin').disabled()
