@@ -4,9 +4,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 before_script:
-    - >
-      dnf install -y
-      git make automake autoconf autoconf-archive libtool xz rpmlint
+    - dnf install -y git xz rpmlint findutils
     # get dependencies from spec file
     - dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/\bspice-protocol\b//; s/>.*//' spice-streaming-agent.spec.in`
     - git clone ${CI_REPOSITORY_URL/spice-streaming-agent/spice-protocol}
@@ -14,14 +12,6 @@ before_script:
     - ninja -C build-spice-protocol install
 
 build_and_test:
-  script:
-    - autoreconf -fi
-    - ./configure
-    - make
-    - make check || (cat src/unittests/test-suite.log && exit 1)
-    - make distcheck
-
-build_meson:
   script:
     - meson --buildtype=release --werror build-default
     # check SPEC file
