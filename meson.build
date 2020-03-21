@@ -8,7 +8,7 @@ project('spice-streaming-agent', 'c', 'cpp',
         default_options : [
           'buildtype=debugoptimized',
           'warning_level=2',
-          'cpp_std=c++11',
+          'cpp_std=gnu++11',
         ])
 
 
