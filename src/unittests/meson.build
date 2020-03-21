@@ -39,7 +39,7 @@ foreach t : tests
                    link_with : t.get('link_with', []),
                    dependencies : t.get('dependencies', []),
                    install : false,
-                   gnu_symbol_visibility : 'inlineshidden')
+                   gnu_symbol_visibility : 'hidden')
 
   if is_test
     test(test_name, exe)
