@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+if ! test -d "$1"; then
+    echo "Source directory not provided" >&2
+    exit 1
+fi
+
+# add missing recorder files
+(cd "$1" && ls -1 subprojects/spice-common/common/recorder/recorder.[ch] \
+    subprojects/spice-common/common/recorder/recorder_ring.[ch] | \
+    tar cf - -T -) | (cd "$MESON_DIST_ROOT" && exec tar xf -)
+
+# remove possible subprojects SPEC files to avoid conflicts
+find "$MESON_DIST_ROOT" -name \*.spec -type f -delete
+
+cp spice-streaming-agent.spec "$MESON_DIST_ROOT/"

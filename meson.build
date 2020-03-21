@@ -11,6 +11,8 @@ project('spice-streaming-agent', 'c', 'cpp',
           'cpp_std=gnu++11',
         ])
 
+meson.add_dist_script('build-aux/meson-dist', meson.source_root())
+
 
 #
 # check for dependencies
@@ -45,7 +47,11 @@ config_data = configuration_data()
 #
 # set up subprojects
 #
-spice_common = subproject('spice-common', default_options : ['generate-code=all'])
+spice_common = subproject('spice-common',
+                          default_options : [
+                            'generate-code=all',
+                            'smartcard=disabled',
+                          ])
 spice_common_deps = [spice_common.get_variable('spice_common_client_dep')]
 config_data.merge_from(spice_common.get_variable('spice_common_config_data'))
 

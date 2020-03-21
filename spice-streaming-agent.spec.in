@@ -15,6 +15,7 @@ BuildRequires:  libdrm-devel
 BuildRequires:  libXrandr-devel
 BuildRequires:  gcc-c++
 BuildRequires:  diffutils
+BuildRequires:  meson
 BuildRequires:  gstreamer1-devel
 BuildRequires:  gstreamer1-plugins-base-devel
 BuildRequires:  pixman-devel
@@ -47,17 +48,14 @@ agent plugins.
 %setup -q
 
 %build
-%configure --enable-tests --with-udevrulesdir=%{_udevrulesdir}
-make %{?_smp_mflags} V=1
+%meson -Dunittests=enabled -Dudevrulesdir=%{_udevrulesdir}
+%meson_build
 
 %check
-make check
+%meson_test
 
 %install
-make install DESTDIR=%{buildroot} V=1
-if test -d "%{buildroot}/%{_libdir}/%{name}/plugins"; then
-    find %{buildroot}/%{_libdir}/%{name}/plugins -name '*.la' -delete
-fi
+%meson_install
 
 %post
 semanage fcontext -a -t xserver_exec_t %{_bindir}/spice-streaming-agent 2>/dev/null || :
