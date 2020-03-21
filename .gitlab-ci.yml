@@ -23,7 +23,7 @@ build_and_test:
 
 build_meson:
   script:
-    - meson --buildtype=release build-default
+    - meson --buildtype=release --werror build-default
     # check SPEC file
     - rpmlint -o "NetworkEnabled False" build-default/spice-streaming-agent.spec
     # this fix an issue with Meson dist
@@ -32,6 +32,6 @@ build_meson:
     - ninja -C build-default
     - ninja -C build-default test
 
-    - meson --buildtype=release build-feat-disabled -Dauto_features=disabled
+    - meson --buildtype=release --werror build-feat-disabled -Dauto_features=disabled
     - ninja -C build-feat-disabled
     - ninja -C build-feat-disabled test
