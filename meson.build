@@ -63,10 +63,12 @@ compile_gst_plugin = false
 gst_deps = []
 if not get_option('gst-plugin').disabled()
   deps = ['gstreamer-1.0', 'gstreamer-app-1.0']
-  foreach dep : deps
-    gst_deps += dependency(dep, version: '>= 1.10', required : get_option('gst-plugin'))
-  endforeach
   compile_gst_plugin = true
+  foreach dep : deps
+    dep = dependency(dep, version: '>= 1.10', required : get_option('gst-plugin'))
+    compile_gst_plugin = compile_gst_plugin and dep.found()
+    gst_deps += dep
+  endforeach
 endif
 
 compile_tests = false
