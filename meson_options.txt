@@ -1,5 +1,6 @@
 option('gst-plugin',
        type : 'feature',
+       value : 'enabled',
        description : 'Enable GStreamer based plugin')
 
 option('unittests',
