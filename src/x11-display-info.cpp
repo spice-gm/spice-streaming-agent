@@ -198,7 +198,10 @@ std::vector<std::string> get_xrandr_outputs(Display *display, Window window)
                                                       screen_resources,
                                                       screen_resources->outputs[i]);
 
-        result.emplace_back(output_info->name);
+        /* only add connected outputs */
+        if (output_info->connection == RR_Connected) {
+            result.emplace_back(output_info->name);
+        }
 
         XRRFreeOutputInfo(output_info);
     }
