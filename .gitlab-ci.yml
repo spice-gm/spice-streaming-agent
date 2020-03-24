@@ -6,7 +6,7 @@ variables:
 before_script:
     - dnf install -y git xz rpmlint findutils
     # get dependencies from spec file
-    - dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/\bspice-protocol\b//; s/>.*//' spice-streaming-agent.spec.in`
+    - dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/python36/python3/; s/\bspice-protocol\b//; s/>.*//' spice-streaming-agent.spec.in`
     - git clone ${CI_REPOSITORY_URL/spice-streaming-agent/spice-protocol}
     - meson --buildtype=release spice-protocol build-spice-protocol --prefix=/usr --werror
     - ninja -C build-spice-protocol install

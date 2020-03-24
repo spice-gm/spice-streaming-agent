@@ -22,7 +22,7 @@ srpm:
 	ninja -C build-spice-protocol install
 
 	# get other dependencies for project excluding spice-protocol
-	dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/\bspice-protocol\b//; s/>.*//' *.spec.in`
+	dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/python36/python3/; s/\bspice-protocol\b//; s/>.*//' *.spec.in`
 
 	# set project version
 	sed -i -E "s/^( +version : )'[0-9\.]+'/\\1'$$(date +'%Y%m%d%H%M.spice.latest')'/" meson.build

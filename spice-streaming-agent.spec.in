@@ -22,9 +22,15 @@ BuildRequires:  pixman-devel
 BuildRequires:  glib2-devel
 BuildRequires:  opus-devel
 BuildRequires:  openssl-devel
+%if 0%{?rhel} && 0%{?rhel} <= 7
+BuildRequires:  python36
+BuildRequires:  python36-six
+BuildRequires:  python36-pyparsing
+%else
 BuildRequires:  python3
 BuildRequires:  python3-six
 BuildRequires:  python3-pyparsing
+%endif
 # we need /usr/sbin/semanage program which is available on different
 # packages depending on distribution
 Requires(post): /usr/sbin/semanage
