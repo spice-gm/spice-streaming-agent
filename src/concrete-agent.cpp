@@ -14,6 +14,7 @@
 #include <dlfcn.h>
 #include <string>
 #include <cstdarg>
+#include <stdexcept>
 
 using namespace spice::streaming_agent;
 
