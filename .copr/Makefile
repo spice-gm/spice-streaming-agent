@@ -1,5 +1,14 @@
 # This Makefile script is invoked by copr to build source rpm
 # See: https://docs.pagure.org/copr.copr/user_documentation.html#make-srpm
+#
+# How to test/setup
+# 1- login to Copr account
+# 2- add a project setting the desired chroots (for testing copy the
+#    one on official Copr project)
+# 3- add a SCM build
+#   a- URL: url of git repository
+#   b- Committish: branch name to use, empty master
+#   c- build with make_srpm
 
 PROTOCOL_GIT_REPO = https://gitlab.freedesktop.org/spice/spice-protocol
 BUILD = xz git rpm-build meson
