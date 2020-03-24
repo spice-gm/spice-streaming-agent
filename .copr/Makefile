@@ -2,7 +2,7 @@
 # See: https://docs.pagure.org/copr.copr/user_documentation.html#make-srpm
 
 PROTOCOL_GIT_REPO = https://gitlab.freedesktop.org/spice/spice-protocol
-BUILD = xz git rpm-build
+BUILD = xz git rpm-build meson
 
 srpm:
 	dnf install -y $(BUILD)
@@ -18,10 +18,13 @@ srpm:
 	# set project version
 	sed -i -E "s/^( +version : )'[0-9\.]+'/\\1'$$(date +'%Y%m%d%H%M.spice.latest')'/" meson.build
 	git add meson.build
+	git config --local user.email "dummy@dummy.com"
+	git config --local user.name "dummy"
 	git commit -m 'automatic version update'
 
 	# create source rpm
 	rm -rf build && mkdir build
+	git submodule update --init --recursive
 	meson . build --prefix=/usr --werror
 	if ! test -r ../spice-common.git; then DIR=`basename "$$PWD"`; ln -s "$$DIR/.git/modules/spice-common" ../spice-common.git; fi
 	ninja -C build dist
