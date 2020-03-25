@@ -25,8 +25,8 @@ srpm:
 	dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/python36/python3/; s/\bspice-protocol\b//; s/>.*//' *.spec.in`
 
 	# set project version
-	sed -i -E "s/^( +version : )'[0-9\.]+'/\\1'$$(date +'%Y%m%d%H%M.spice.latest')'/" meson.build
-	git add meson.build
+	sed -i -E "s/^(Release: +).*/\\1$$(date +'%Y%m%d%H%M.spice.latest')/" spice-streaming-agent.spec.in
+	git add spice-streaming-agent.spec.in
 	git config --local user.email "dummy@dummy.com"
 	git config --local user.name "dummy"
 	git commit -m 'automatic version update'
