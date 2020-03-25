@@ -9,6 +9,7 @@ project('spice-streaming-agent', 'c', 'cpp',
           'buildtype=debugoptimized',
           'warning_level=2',
           'cpp_std=gnu++11',
+          'c_std=gnu99',
         ])
 
 meson.add_dist_script('build-aux/meson-dist', meson.source_root())
