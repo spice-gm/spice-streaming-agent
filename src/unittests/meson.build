@@ -27,6 +27,17 @@ tests = [
       'spice-catch.hpp',
     ],
     'dependencies' : spice_common_deps,
+  },
+  {
+    'name' : 'xrandrlist',
+    'is_test' : false,
+    'sources' : [
+      'xrandrlist.cpp',
+      '../display-info.cpp',
+      '../utils.cpp',
+      '../x11-display-info.cpp',
+    ],
+    'dependencies' : agent_deps,
   }
 ]
 
