@@ -524,6 +524,7 @@ SPICE_STREAMING_AGENT_PLUGIN(agent)
 {
     const std::string gst_prefix = "gst.";
     auto options = agent->Options();
+    bool registered = false;
 
     gst_init(nullptr, nullptr);
 
@@ -537,7 +538,14 @@ SPICE_STREAMING_AGENT_PLUGIN(agent)
 
             plugin->ParseOptions(agent->Options(), codec_name, value);
             agent->Register(plugin);
+            registered = true;
         }
+    }
+
+    if (!registered) {
+        auto plugin = std::make_shared<GstreamerPlugin>();
+        plugin->ParseOptions(agent->Options(), "vp8", "auto");
+        agent->Register(plugin);
     }
 
     return true;
