@@ -66,23 +66,22 @@ public:
     }
 };
 
-CursorUpdater::CursorUpdater(StreamPort *stream_port) : stream_port(stream_port)
+CursorUpdater::CursorUpdater(StreamPort *stream_port) :
+    stream_port(stream_port),
+    con(xcb_connect(nullptr, nullptr))
 {
-    con = xcb_connect(nullptr, nullptr);
-    if (xcb_connection_has_error(con)) {
+    if (xcb_connection_has_error(con.get())) {
         throw Error("Failed to initiate connection to X");
     }
 
-    xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(con)).data;
+    xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(con.get())).data;
     if (!screen) {
-        xcb_disconnect(con);
         throw Error("Cannot get XCB screen");
     }
 
     // init xfixes
-    const xcb_query_extension_reply_t *reply = xcb_get_extension_data(con, &xcb_xfixes_id);
+    const xcb_query_extension_reply_t *reply = xcb_get_extension_data(con.get(), &xcb_xfixes_id);
     if (!reply || !reply->present) {
-        xcb_disconnect(con);
         throw Error("Get xfixes extension failed");
     }
     xfixes_event_base = reply->first_event;
@@ -91,19 +90,21 @@ CursorUpdater::CursorUpdater(StreamPort *stream_port) : stream_port(stream_port)
     xcb_xfixes_query_version_reply_t *xfixes_query_reply;
     xcb_generic_error_t *error = 0;
 
-    xfixes_query_cookie = xcb_xfixes_query_version(con, XCB_XFIXES_MAJOR_VERSION, XCB_XFIXES_MINOR_VERSION);
-    xfixes_query_reply = xcb_xfixes_query_version_reply(con, xfixes_query_cookie, &error);
+    xfixes_query_cookie = xcb_xfixes_query_version(con.get(), XCB_XFIXES_MAJOR_VERSION,
+                                                   XCB_XFIXES_MINOR_VERSION);
+    xfixes_query_reply = xcb_xfixes_query_version_reply(con.get(), xfixes_query_cookie, &error);
     if (!xfixes_query_reply || error) {
+        free(xfixes_query_reply);
         free(error);
-        xcb_disconnect(con);
         throw Error("Query xfixes extension failed");
     }
     free(xfixes_query_reply);
 
     // register to cursor events
-    xcb_xfixes_select_cursor_input(con ,screen->root , XCB_XFIXES_CURSOR_NOTIFY_MASK_DISPLAY_CURSOR);
+    xcb_xfixes_select_cursor_input(con.get(), screen->root,
+                                   XCB_XFIXES_CURSOR_NOTIFY_MASK_DISPLAY_CURSOR);
 
-    xcb_flush(con);
+    xcb_flush(con.get());
 }
 
 void CursorUpdater::operator()()
@@ -112,19 +113,18 @@ void CursorUpdater::operator()()
 
     while (1) {
         try {
-            while (auto event = xcb_wait_for_event(con)) {
+            while (auto event = xcb_wait_for_event(con.get())) {
                 if (event->response_type != xfixes_event_base + XCB_XFIXES_CURSOR_NOTIFY) {
                     continue;
                 }
 
                 xcb_xfixes_get_cursor_image_cookie_t cookie;
-                xcb_xfixes_get_cursor_image_reply_t* cursor_reply;
 
-                cookie = xcb_xfixes_get_cursor_image(con);
-                cursor_reply = xcb_xfixes_get_cursor_image_reply(con, cookie, nullptr);
+                cookie = xcb_xfixes_get_cursor_image(con.get());
+                xcb_xfixes_get_cursor_image_reply_uptr
+                    cursor_reply(xcb_xfixes_get_cursor_image_reply(con.get(), cookie, nullptr));
 
                 if (cursor_reply->cursor_serial == last_serial) {
-                    free(cursor_reply);
                     continue;
                 }
 
@@ -132,17 +132,18 @@ void CursorUpdater::operator()()
                     cursor_reply->height > STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
                     ::syslog(LOG_WARNING, "cursor updater thread: ignoring cursor: too big %ux%u",
                              cursor_reply->width, cursor_reply->height);
-                    free(cursor_reply);
                     continue;
                 }
 
                 last_serial = cursor_reply->cursor_serial;
 
                 // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
-                size_t pixcount = xcb_xfixes_get_cursor_image_cursor_image_length(cursor_reply);
+                size_t pixcount =
+                    xcb_xfixes_get_cursor_image_cursor_image_length(cursor_reply.get());
                 std::vector<uint32_t> pixels;
                 pixels.reserve(pixcount);
-                const uint32_t *reply_pixels = xcb_xfixes_get_cursor_image_cursor_image(cursor_reply);
+                const uint32_t *reply_pixels =
+                    xcb_xfixes_get_cursor_image_cursor_image(cursor_reply.get());
 
                 for (size_t i = 0; i < pixcount; ++i) {
                     pixels.push_back(reply_pixels[i]);
@@ -150,7 +151,6 @@ void CursorUpdater::operator()()
 
                 stream_port->send<CursorMessage>(cursor_reply->width, cursor_reply->height,
                                              cursor_reply->xhot, cursor_reply->yhot, pixels);
-                free(cursor_reply);
             }
         } catch (const std::exception &e) {
             ::syslog(LOG_ERR, "Error in cursor updater thread: %s", e.what());
