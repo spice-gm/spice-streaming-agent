@@ -34,6 +34,7 @@ agent_sources = [
   'utils.hpp',
   'x11-display-info.cpp',
 ]
+thread_dep = dependency('threads')
 agent_cpp_args = [
   '-DSPICE_STREAMING_AGENT_PROGRAM',
   '-DPLUGINSDIR="@0@"'.format(plugins_dir),
@@ -52,7 +53,7 @@ executable('spice-streaming-agent', agent_sources,
            link_args : agent_link_args,
            export_dynamic : true,
            link_with : utils_lib,
-           dependencies : [agent_deps],
+           dependencies : [agent_deps, thread_dep],
            gnu_symbol_visibility : 'inlineshidden',
            pie : true)
 
